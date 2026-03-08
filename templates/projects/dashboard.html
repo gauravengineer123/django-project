@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Student Project Manager{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-5">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </h1>
+        <p class="text-muted">Welcome back, {{ user.username }}! Here's an overview of your projects.</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card border-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Total Projects</h6>
+                        <h2 class="mb-0">{{ total_projects }}</h2>
+                    </div>
+                    <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-folder"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card border-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Active Projects</h6>
+                        <h2 class="mb-0">{{ active_projects }}</h2>
+                    </div>
+                    <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card border-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Completed</h6>
+                        <h2 class="mb-0">{{ completed_projects }}</h2>
+                    </div>
+                    <div class="stat-icon bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Recent Projects -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-list-task"></i> Recent Projects</h5>
+                    <a href="{% url 'project_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if projects %}
+                    <div class="list-group list-group-flush">
+                        {% for project in projects %}
+                        <a href="{% url 'project_detail' project.pk %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ project.title }}</h6>
+                                    <p class="mb-1 text-muted small">{{ project.description|truncatewords:15 }}</p>
+                                    <div class="d-flex gap-2 align-items-center">
+                                        <span class="badge bg-{{ project.status|yesno:'success,warning,secondary' }} text-{{ project.status|yesno:'success,warning,secondary' }}-emphasis bg-{{ project.status|yesno:'success,warning,secondary' }}-subtle border border-{{ project.status|yesno:'success,warning,secondary' }}-subtle">
+                                            {{ project.get_status_display }}
+                                        </span>
+                                        <small class="text-muted">
+                                            <i class="bi bi-calendar-event"></i> Due: {{ project.deadline }}
+                                        </small>
+                                        {% if project.is_overdue %}
+                                        <span class="badge bg-danger">Overdue</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="ms-3">
+                                    <div class="progress-circle">
+                                        <span class="progress-value">{{ project.progress_percentage }}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox display-1 text-muted"></i>
+                        <p class="text-muted mt-3">No projects yet. Create your first project!</p>
+                        <a href="{% url 'project_create' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Create Project
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tasks Overview -->
+    <div class="col-lg-4">
+        <!-- Overdue Tasks -->
+        <div class="card mb-3">
+            <div class="card-header bg-danger text-white">
+                <h6 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Overdue Tasks</h6>
+            </div>
+            <div class="card-body">
+                {% if overdue_tasks %}
+                    <div class="list-group list-group-flush">
+                        {% for task in overdue_tasks %}
+                        <div class="list-group-item px-0">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1 small">{{ task.title }}</h6>
+                                    <small class="text-muted">{{ task.project.title }}</small>
+                                </div>
+                                <span class="badge bg-danger">{{ task.days_remaining }} days</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted small mb-0">No overdue tasks! 🎉</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Upcoming Deadlines -->
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0"><i class="bi bi-clock"></i> Upcoming Deadlines</h6>
+            </div>
+            <div class="card-body">
+                {% if upcoming_tasks %}
+                    <div class="list-group list-group-flush">
+                        {% for task in upcoming_tasks %}
+                        <div class="list-group-item px-0">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1 small">{{ task.title }}</h6>
+                                    <small class="text-muted">{{ task.project.title }}</small>
+                                </div>
+                                <span class="badge bg-warning text-dark">{{ task.days_remaining }} days</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted small mb-0">No upcoming tasks in the next 7 days.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
