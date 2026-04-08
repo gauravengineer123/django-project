@@ -18,11 +18,17 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = ['*']
 
+RENDER_EXTERNAL_HOSTNAME = config('RENDER_EXTERNAL_HOSTNAME', default=None)
+
 CSRF_TRUSTED_ORIGINS = [
     'https://*.vercel.app',
+    'https://*.onrender.com',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
 ]
+
+if RENDER_EXTERNAL_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
 
 
 # ─── APPLICATIONS ─────────────────────────────────────────────────────────────
@@ -77,11 +83,19 @@ if DATABASE_URL:
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, conn_health_checks=True)
     }
-else:
+elif DEBUG:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+else:
+    # Production without DATABASE_URL — use dummy backend to allow deployment
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
         }
     }
 
@@ -120,10 +134,13 @@ LOGIN_URL = 'login'
 
 
 # ─── SESSION ──────────────────────────────────────────────────────────────────
-# Production (Vercel): Cookie-based sessions — filesystem read-only hai
-# Development: Database sessions use kar sakta hai
-if DATABASE_URL:
-    # Production pe bhi cookie sessions use karo — reliable hai serverless pe
+# Render: Database sessions use kar sakte ho (persistent server hai)
+# Vercel: Cookie-based sessions — filesystem read-only hai
+IS_RENDER = config('RENDER', default=False, cast=bool)
+
+if IS_RENDER:
+    SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+elif DATABASE_URL:
     SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 else:
     SESSION_ENGINE = 'django.contrib.sessions.backends.db'

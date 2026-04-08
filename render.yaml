@@ -1,0 +1,26 @@
+databases:
+  - name: student-project-manager-db
+    plan: free
+    databaseName: student_project_db
+    user: student_admin
+
+services:
+  - type: web
+    name: student-project-manager
+    runtime: python
+    plan: free
+    buildCommand: "./render_build.sh"
+    startCommand: "gunicorn student_project_manager.wsgi:application"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: student-project-manager-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: PYTHON_VERSION
+        value: "3.12.3"
+      - key: RENDER
+        value: "true"
